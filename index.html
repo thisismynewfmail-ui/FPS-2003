@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TEMPUS &mdash; Corridors of Eternity [beta build 2003.07.14]</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#x231B;</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="viewport">
+  <canvas id="game"></canvas>
+
+  <!-- CRT / scanline overlay -->
+  <div id="crt"></div>
+  <div id="vignette"></div>
+  <div id="tempus-tint"></div>
+  <div id="damage-flash"></div>
+  <div id="white-fade"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="crosshair"><span></span><span></span><span></span><span></span></div>
+    <div id="hud-health" class="hud-panel">
+      <div class="hud-label">VITALITY</div>
+      <div class="hud-big" id="health-num">100</div>
+    </div>
+    <div id="hud-ammo" class="hud-panel">
+      <div class="hud-label">PEARL &middot; 12</div>
+      <div class="hud-big"><span id="ammo-num">12</span><span class="hud-dim" id="ammo-res">/&infin;</span></div>
+    </div>
+    <div id="hud-tempus" class="hud-panel">
+      <div class="hud-label">TEMPUS</div>
+      <div id="hourglass">
+        <div id="hg-top"><div id="hg-top-sand"></div></div>
+        <div id="hg-neck"></div>
+        <div id="hg-bot"><div id="hg-bot-sand"></div></div>
+      </div>
+    </div>
+    <div id="hud-keys" class="hud-panel">
+      <div class="hud-label">KEYS OF THE HOURS</div>
+      <div id="key-row">
+        <span class="key-slot" id="key-past">PAST</span>
+        <span class="key-slot" id="key-present">PRESENT</span>
+        <span class="key-slot" id="key-future">FUTURE</span>
+      </div>
+    </div>
+    <div id="message"></div>
+    <div id="submessage"></div>
+    <div id="zone-title"></div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="menu">
+    <div class="menu-stars"></div>
+    <div id="menu-inner">
+      <div id="title-block">
+        <div id="game-title">TEMPUS</div>
+        <div id="game-subtitle">&mdash; CORRIDORS OF ETERNITY &mdash;</div>
+      </div>
+      <div id="menu-items">
+        <div class="menu-item" id="mi-new">NEW GAME</div>
+        <div class="menu-item" id="mi-resume" style="display:none">RESUME</div>
+        <div class="menu-item mi-dead" id="mi-options">OPTIONS</div>
+        <div class="menu-item mi-dead" id="mi-load">LOAD GAME</div>
+        <div class="menu-item mi-dead" id="mi-quit">QUIT</div>
+      </div>
+      <div id="menu-tip">W A S D move &nbsp;&middot;&nbsp; MOUSE aim &nbsp;&middot;&nbsp; LMB fire &nbsp;&middot;&nbsp; RMB tempus shift &nbsp;&middot;&nbsp; R reload &nbsp;&middot;&nbsp; SPACE jump &nbsp;&middot;&nbsp; SHIFT sprint</div>
+      <div id="menu-build">MERIDIAN SOFTWORKS &copy;2003 &nbsp;&middot;&nbsp; ETERNITY ENGINE&trade; &nbsp;&middot;&nbsp; beta 0.3 &mdash; build 2003.07.14 &mdash; NOT FOR RESALE</div>
+    </div>
+  </div>
+
+  <!-- INTRO BRIEFING -->
+  <div id="intro" class="hidden">
+    <div id="intro-text"></div>
+    <div id="intro-skip">CLICK TO CONTINUE</div>
+  </div>
+
+  <!-- DEATH SCREEN -->
+  <div id="death" class="hidden">
+    <div id="death-title">OUT OF TIME</div>
+    <div id="death-sub">the hours close over you like water</div>
+    <div id="death-hint">CLICK TO BE REWOUND</div>
+  </div>
+
+  <!-- WIN SCREEN -->
+  <div id="win" class="hidden">
+    <div id="win-title">TIME RESUMES</div>
+    <div id="win-body"></div>
+    <div id="win-credit">TO BE CONTINUED &mdash; 2004<br><span>MERIDIAN SOFTWORKS &copy;2003</span></div>
+  </div>
+
+  <!-- PAUSE -->
+  <div id="pause" class="hidden">
+    <div id="pause-title">PAUSED</div>
+    <div id="pause-sub">the world holds its breath</div>
+    <div id="pause-hint">CLICK TO RESUME &nbsp;&middot;&nbsp; M toggle sound</div>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="src/textures.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/props.js"></script>
+<script src="src/world.js"></script>
+<script src="src/enemies.js"></script>
+<script src="src/player.js"></script>
+<script src="src/hud.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

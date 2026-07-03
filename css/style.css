@@ -1,0 +1,260 @@
+/* TEMPUS — Corridors of Eternity — 2003 vaporware FPS chrome */
+
+@font-face { font-family: 'sysfallback'; src: local('Verdana'); }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+#viewport { position: fixed; inset: 0; background: #000; }
+
+canvas#game {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- CRT overlays ---------- */
+
+#crt {
+  position: absolute; inset: 0; pointer-events: none; z-index: 40;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.00) 0px, rgba(0,0,0,0.00) 2px,
+    rgba(0,0,0,0.10) 3px, rgba(0,0,0,0.00) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: .55;
+}
+
+#vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 41;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,0) 55%, rgba(10,0,25,0.35) 100%);
+}
+
+#tempus-tint {
+  position: absolute; inset: 0; pointer-events: none; z-index: 42;
+  background: radial-gradient(ellipse at center,
+    rgba(140,110,255,0.10) 0%, rgba(80,40,180,0.30) 100%);
+  opacity: 0; transition: opacity .25s ease;
+}
+
+#damage-flash {
+  position: absolute; inset: 0; pointer-events: none; z-index: 43;
+  background: radial-gradient(ellipse at center,
+    rgba(255,0,40,0.0) 40%, rgba(255,0,40,0.55) 100%);
+  opacity: 0;
+}
+
+#white-fade {
+  position: absolute; inset: 0; pointer-events: none; z-index: 60;
+  background: #fff; opacity: 0;
+}
+
+/* ---------- HUD ---------- */
+
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+
+#crosshair {
+  position: absolute; left: 50%; top: 50%; width: 0; height: 0;
+}
+#crosshair span {
+  position: absolute; background: rgba(255,200,80,0.9);
+  box-shadow: 0 0 4px rgba(255,160,0,0.8);
+}
+#crosshair span:nth-child(1) { left: -1px; top: -10px; width: 2px; height: 6px; }
+#crosshair span:nth-child(2) { left: -1px; top:  4px;  width: 2px; height: 6px; }
+#crosshair span:nth-child(3) { left: -10px; top: -1px; width: 6px; height: 2px; }
+#crosshair span:nth-child(4) { left:  4px;  top: -1px; width: 6px; height: 2px; }
+
+.hud-panel {
+  position: absolute;
+  background: rgba(20, 12, 4, 0.45);
+  border: 1px solid rgba(255, 160, 40, 0.35);
+  border-radius: 2px;
+  padding: 6px 14px 8px;
+  color: #ffb84d;
+  text-shadow: 0 0 6px rgba(255,140,0,0.75);
+}
+.hud-label {
+  font-size: 9px; letter-spacing: 2px; opacity: .8; margin-bottom: 2px;
+}
+.hud-big { font-size: 34px; font-weight: bold; line-height: 1; }
+.hud-dim { font-size: 16px; opacity: .6; font-weight: normal; }
+
+#hud-health { left: 24px; bottom: 22px; min-width: 110px; }
+#hud-ammo   { right: 24px; bottom: 22px; min-width: 120px; text-align: right; }
+#hud-keys   { right: 24px; top: 20px; text-align: right; }
+#hud-tempus { left: 50%; transform: translateX(-50%); bottom: 22px; text-align: center; }
+
+#health-num.low { color: #ff4040; text-shadow: 0 0 8px rgba(255,0,0,.9); }
+
+/* hourglass meter */
+#hourglass { width: 34px; margin: 2px auto 0; }
+#hg-top, #hg-bot {
+  width: 34px; height: 15px; border: 1px solid rgba(255,190,80,.7);
+  position: relative; overflow: hidden; background: rgba(255,190,80,.08);
+}
+#hg-top { border-radius: 3px 3px 12px 12px; }
+#hg-bot { border-radius: 12px 12px 3px 3px; }
+#hg-neck { width: 6px; height: 3px; margin: 0 auto; background: rgba(255,190,80,.5); }
+#hg-top-sand, #hg-bot-sand {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(#ffd98a, #e8a83e);
+  height: 100%;
+}
+
+/* keys */
+#key-row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 2px; }
+.key-slot {
+  font-size: 9px; letter-spacing: 1px; padding: 3px 7px;
+  border: 1px solid rgba(255,190,80,.25); border-radius: 2px;
+  color: rgba(255,190,80,.28);
+}
+.key-slot.got {
+  color: #ffd700; border-color: rgba(255,215,0,.85);
+  background: rgba(255,200,40,.12);
+  text-shadow: 0 0 8px rgba(255,215,0,.9);
+  box-shadow: 0 0 10px rgba(255,190,60,.35);
+}
+
+/* center messages */
+#message {
+  position: absolute; left: 50%; top: 30%; transform: translateX(-50%);
+  color: #ffe9b0; font-size: 20px; letter-spacing: 4px; text-align: center;
+  text-shadow: 0 0 12px rgba(255,180,60,.9), 0 2px 2px #000;
+  opacity: 0; transition: opacity .5s; white-space: nowrap;
+}
+#submessage {
+  position: absolute; left: 50%; top: calc(30% + 34px); transform: translateX(-50%);
+  color: #c9b8ff; font-size: 11px; letter-spacing: 3px; text-align: center;
+  text-shadow: 0 0 8px rgba(150,100,255,.8), 0 1px 1px #000;
+  opacity: 0; transition: opacity .5s; white-space: nowrap;
+}
+#zone-title {
+  position: absolute; left: 50%; top: 16%; transform: translateX(-50%);
+  color: #fff; font-size: 26px; letter-spacing: 10px; font-style: italic;
+  text-shadow: 0 0 18px rgba(190,150,255,.9), 0 2px 2px #000;
+  opacity: 0; transition: opacity 1.2s; white-space: nowrap;
+}
+
+/* ---------- MENU ---------- */
+
+#menu {
+  position: absolute; inset: 0; z-index: 70;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 110%, rgba(255,60,180,.25), transparent 60%),
+    radial-gradient(ellipse 80% 55% at 15% -10%, rgba(80,40,200,.4), transparent 60%),
+    linear-gradient(#03000c, #0b0322 55%, #1b0a3a);
+  display: flex; align-items: center; justify-content: center;
+}
+.menu-stars {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, #fff, transparent),
+    radial-gradient(1px 1px at 34% 68%, #ccf, transparent),
+    radial-gradient(2px 2px at 56% 14%, #fdf, transparent),
+    radial-gradient(1px 1px at 71% 44%, #fff, transparent),
+    radial-gradient(1px 1px at 88% 78%, #cef, transparent),
+    radial-gradient(1px 1px at 22% 86%, #fff, transparent),
+    radial-gradient(2px 2px at 45% 38%, #ffc, transparent),
+    radial-gradient(1px 1px at 64% 90%, #fff, transparent),
+    radial-gradient(1px 1px at 93% 8%,  #cdf, transparent),
+    radial-gradient(1px 1px at 5% 55%,  #fff, transparent);
+  animation: starPulse 4s ease-in-out infinite alternate;
+}
+@keyframes starPulse { from { opacity: .5; } to { opacity: 1; } }
+
+#menu-inner { text-align: center; position: relative; }
+
+#game-title {
+  font-size: 92px; font-weight: bold; letter-spacing: 26px;
+  padding-left: 26px;
+  background: linear-gradient(180deg, #fff8e0 0%, #ffd76e 30%, #b06a12 52%, #ffe9a8 58%, #8a4a00 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 22px rgba(255,190,80,.5)) drop-shadow(0 4px 0 rgba(60,20,0,.8));
+  font-family: 'Times New Roman', Times, serif;
+}
+#game-subtitle {
+  margin-top: 6px; color: #c9b8ff; letter-spacing: 8px; font-size: 13px;
+  text-shadow: 0 0 12px rgba(150,100,255,.9);
+}
+#title-block { margin-bottom: 54px; animation: titleFloat 6s ease-in-out infinite alternate; }
+@keyframes titleFloat { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+
+#menu-items { display: inline-block; text-align: left; }
+.menu-item {
+  color: #ffb84d; font-size: 20px; letter-spacing: 5px; padding: 7px 30px;
+  cursor: pointer; text-shadow: 0 0 8px rgba(255,140,0,.6);
+  transition: transform .1s;
+}
+.menu-item:hover { color: #fff2d0; transform: translateX(8px); text-shadow: 0 0 14px rgba(255,200,90,1); }
+.menu-item.mi-dead { color: #6a5a4a; text-shadow: none; cursor: not-allowed; }
+.menu-item.mi-dead:hover { transform: none; color: #7a6a58; }
+
+#menu-tip {
+  margin-top: 48px; color: #8f86b8; font-size: 10px; letter-spacing: 2px;
+}
+#menu-build {
+  position: fixed; bottom: 14px; left: 0; right: 0; text-align: center;
+  color: #55487a; font-size: 9px; letter-spacing: 2px;
+}
+
+/* ---------- INTRO ---------- */
+
+#intro {
+  position: absolute; inset: 0; z-index: 69; background: #000;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+}
+#intro-text {
+  max-width: 640px; color: #d8c9a0; font-size: 15px; line-height: 2.1;
+  letter-spacing: 2px; text-align: center; white-space: pre-wrap;
+  text-shadow: 0 0 10px rgba(255,200,120,.35);
+  font-family: 'Times New Roman', Times, serif; font-style: italic;
+}
+#intro-skip {
+  position: absolute; bottom: 30px; color: #665; font-size: 10px; letter-spacing: 3px;
+  animation: blink 1.4s steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: .2; } }
+
+/* ---------- DEATH / WIN / PAUSE ---------- */
+
+#death, #win, #pause {
+  position: absolute; inset: 0; z-index: 68;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+}
+#death { background: radial-gradient(ellipse at center, rgba(60,0,10,.88), rgba(5,0,0,.97)); }
+#death-title {
+  color: #ff5540; font-size: 54px; letter-spacing: 18px; font-family: 'Times New Roman', serif;
+  text-shadow: 0 0 30px rgba(255,40,0,.8);
+}
+#death-sub { color: #b06a60; margin-top: 14px; font-size: 12px; letter-spacing: 4px; font-style: italic; }
+#death-hint { color: #806a60; margin-top: 60px; font-size: 10px; letter-spacing: 3px; animation: blink 1.4s steps(2) infinite; }
+
+#win { background: radial-gradient(ellipse at center, rgba(40,20,80,.92), rgba(2,0,10,.98)); }
+#win-title {
+  font-size: 60px; letter-spacing: 20px; font-family: 'Times New Roman', serif;
+  background: linear-gradient(180deg, #fff, #ffd76e 45%, #ff9ad5);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 26px rgba(255,210,120,.7));
+}
+#win-body { color: #cbba9a; margin-top: 26px; font-size: 13px; line-height: 2.2; letter-spacing: 3px; text-align: center; font-style: italic; font-family: 'Times New Roman', serif; }
+#win-credit { color: #9a8ac0; margin-top: 56px; font-size: 13px; letter-spacing: 5px; text-align: center; line-height: 2; }
+#win-credit span { font-size: 9px; color: #665a88; }
+
+#pause { background: rgba(4, 0, 14, .72); }
+#pause-title { color: #ffd98a; font-size: 40px; letter-spacing: 16px; font-family: 'Times New Roman', serif; text-shadow: 0 0 20px rgba(255,190,80,.6); }
+#pause-sub { color: #9a8ac0; margin-top: 10px; font-size: 11px; letter-spacing: 4px; font-style: italic; }
+#pause-hint { color: #776a90; margin-top: 50px; font-size: 10px; letter-spacing: 3px; animation: blink 1.4s steps(2) infinite; }
