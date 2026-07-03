@@ -48,6 +48,37 @@
     <div id="message"></div>
     <div id="submessage"></div>
     <div id="zone-title"></div>
+    <div id="interact-prompt" class="hidden"></div>
+  </div>
+
+  <!-- Minuette's speech bubble (world-anchored) -->
+  <div id="npc-bubble" class="hidden"></div>
+
+  <!-- MINUETTE'S PANEL -->
+  <div id="npc-panel" class="hidden">
+    <div id="npc-panel-inner">
+      <div id="npc-head-row">
+        <canvas id="npc-portrait" width="128" height="128"></canvas>
+        <div id="npc-name-block">
+          <div id="npc-name">MINUETTE</div>
+          <div id="npc-title">&#10022; the last minute &#10022;</div>
+        </div>
+        <div id="npc-clockface">11:57</div>
+      </div>
+      <div id="npc-text"></div>
+      <div id="npc-opts">
+        <div class="npc-opt" id="npc-opt-chat">TALK WITH HER</div>
+        <div class="npc-opt" id="npc-opt-follow">FOLLOW ME</div>
+        <div class="npc-opt" id="npc-opt-wait">WAIT HERE</div>
+        <div class="npc-opt npc-opt-dim" id="npc-opt-leave">NEVERMIND</div>
+      </div>
+      <div id="npc-chat-row" class="hidden">
+        <input id="npc-input" type="text" maxlength="240" placeholder="say something to her..." autocomplete="off">
+        <div class="npc-opt" id="npc-send">SEND</div>
+      </div>
+      <div class="npc-opt npc-opt-dim hidden" id="npc-back">&larr; BACK</div>
+      <div id="npc-hint">ESC or E &mdash; close</div>
+    </div>
   </div>
 
   <!-- MAIN MENU -->
@@ -68,6 +99,17 @@
       <div id="menu-tip">W A S D move &nbsp;&middot;&nbsp; MOUSE aim &nbsp;&middot;&nbsp; LMB fire &nbsp;&middot;&nbsp; RMB tempus shift &nbsp;&middot;&nbsp; R reload &nbsp;&middot;&nbsp; SPACE jump &nbsp;&middot;&nbsp; SHIFT sprint</div>
       <div id="menu-build">MERIDIAN SOFTWORKS &copy;2003 &nbsp;&middot;&nbsp; ETERNITY ENGINE&trade; &nbsp;&middot;&nbsp; beta 0.3 &mdash; build 2003.07.14 &mdash; NOT FOR RESALE</div>
     </div>
+  </div>
+
+  <!-- DEV CONSOLE -->
+  <div id="devconsole" class="hidden">
+    <div id="dev-title">ETERNITY ENGINE&trade; DEVELOPER CONSOLE &mdash; build 2003.07.14</div>
+    <div class="dev-row" id="dev-spawn">[1] custodian spawning: <span id="dev-spawn-state">ON</span></div>
+    <div class="dev-row" id="dev-keys">[2] grant all keys of the hours</div>
+    <div class="dev-row" id="dev-heal">[3] restore vitality &amp; tempus</div>
+    <div class="dev-row" id="dev-save">[4] save world to host now</div>
+    <div id="dev-log"></div>
+    <div id="dev-hint">` / ~ or ESC &mdash; close</div>
   </div>
 
   <!-- INTRO BRIEFING -->
@@ -94,7 +136,78 @@
   <div id="pause" class="hidden">
     <div id="pause-title">PAUSED</div>
     <div id="pause-sub">the world holds its breath</div>
-    <div id="pause-hint">CLICK TO RESUME &nbsp;&middot;&nbsp; M toggle sound</div>
+    <div id="pause-menu-items">
+      <div class="menu-item" id="pi-resume">RESUME</div>
+      <div class="menu-item" id="pi-settings">SETTINGS</div>
+    </div>
+    <div id="pause-hint">CLICK RESUME &nbsp;&middot;&nbsp; M toggle sound</div>
+
+    <!-- SETTINGS -->
+    <div id="settings-panel" class="hidden">
+      <div id="settings-title">SETTINGS &mdash; THE BACK ROOM OF THE ENGINE</div>
+
+      <div class="set-section">MINUETTE'S VOICE &mdash; OpenAI-compatible endpoint (LM Studio etc.)</div>
+      <div class="set-row">
+        <label>ENDPOINT</label>
+        <input id="set-endpoint" type="text" spellcheck="false" placeholder="http://10.0.0.136:5000/v1">
+      </div>
+      <div class="set-row">
+        <label>API KEY</label>
+        <input id="set-apikey" type="text" spellcheck="false" placeholder="(optional)">
+        <label>MODEL</label>
+        <input id="set-model" type="text" spellcheck="false" list="set-model-list" placeholder="(auto)">
+        <datalist id="set-model-list"></datalist>
+      </div>
+      <div class="set-row">
+        <label>TEMPLATE</label>
+        <select id="set-template">
+          <option value="chat">chat &mdash; /chat/completions, server applies model's Jinja (Qwen etc.)</option>
+          <option value="chatml">chatml &mdash; /completions, Qwen ChatML rendered client-side</option>
+        </select>
+        <label class="set-check"><input id="set-ambient" type="checkbox"> AI ambient chatter</label>
+      </div>
+
+      <div class="set-section">SAMPLING</div>
+      <div class="set-row set-grid">
+        <label>temp</label><input id="set-temp" type="number" step="0.05" min="0" max="2">
+        <label>top_p</label><input id="set-topp" type="number" step="0.01" min="0" max="1">
+        <label>top_k</label><input id="set-topk" type="number" step="1" min="0" max="400">
+        <label>min_p</label><input id="set-minp" type="number" step="0.01" min="0" max="1">
+      </div>
+      <div class="set-row set-grid">
+        <label>repeat</label><input id="set-repeat" type="number" step="0.01" min="0" max="2">
+        <label>presence</label><input id="set-presence" type="number" step="0.05" min="-2" max="2">
+        <label>frequency</label><input id="set-frequency" type="number" step="0.05" min="-2" max="2">
+        <label>max tok</label><input id="set-maxtok" type="number" step="10" min="16" max="2048">
+      </div>
+
+      <div class="set-section">MEMORY</div>
+      <div class="set-row">
+        <label>RECALL</label>
+        <input id="set-memcount" type="number" step="1" min="0" max="40" title="how many date-stamped memories she recalls per reply">
+        <span class="set-check">memories injected per reply (0 = amnesia)</span>
+      </div>
+
+      <div class="set-section">SOUND</div>
+      <div class="set-row set-grid">
+        <label>master</label><input id="set-vol-master" type="range" min="0" max="1" step="0.05">
+        <label>music</label><input id="set-vol-music" type="range" min="0" max="1" step="0.05">
+        <label>her voice</label><input id="set-vol-voice" type="range" min="0" max="1" step="0.05">
+        <span></span><span></span>
+      </div>
+
+      <div class="set-row set-buttons">
+        <div class="menu-item set-btn" id="set-test">TEST API</div>
+        <div class="menu-item set-btn" id="set-testchat">TEST CHAT</div>
+        <div class="menu-item set-btn" id="set-apply">APPLY &amp; SAVE</div>
+        <div class="menu-item set-btn" id="set-defaults">DEFAULTS</div>
+        <div class="menu-item set-btn" id="set-clearmem">FORGET MEMORIES</div>
+        <div class="menu-item set-btn" id="set-close">BACK</div>
+      </div>
+      <div id="set-mem-count"></div>
+      <div id="set-status"></div>
+      <div id="set-note">LM Studio: turn on the local server and enable CORS. The chat template mode should stay on "chat" for Qwen instruct models &mdash; the server renders the model's own Jinja template from role messages.</div>
+    </div>
   </div>
 </div>
 
@@ -104,6 +217,9 @@
 <script src="src/props.js"></script>
 <script src="src/world.js"></script>
 <script src="src/enemies.js"></script>
+<script src="src/npc.js"></script>
+<script src="src/dialogue.js"></script>
+<script src="src/settings.js"></script>
 <script src="src/player.js"></script>
 <script src="src/hud.js"></script>
 <script src="src/main.js"></script>

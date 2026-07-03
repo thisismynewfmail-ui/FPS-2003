@@ -15,6 +15,14 @@ var PROPS = (function () {
     for (var i = 0; i < anims.length; i++) anims[i](t, dt, flow);
   }
 
+  // shortest-path angle easing
+  function lerpAngle(a, b, k) {
+    var d = b - a;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return a + d * Math.min(1, k);
+  }
+
   function init(textures) {
     T = textures;
     M.checker = new THREE.MeshLambertMaterial({ map: TX.tex(T.checkerFloor, 1, 1) });
@@ -158,10 +166,16 @@ var PROPS = (function () {
     }
 
     var phase = Math.random() * 6;
+    var kick = 0;      // a chime lends the pendulum (and you) some minutes
     reg(function (t, dt, flow) {
-      pend.rotation.z = Math.sin(t * 2.6 + phase) * 0.38 * flow;
-      hands.advance(dt * flow);
+      kick = Math.max(0, kick - dt * 0.25);
+      pend.rotation.z = Math.sin(t * 2.6 + phase) * (0.38 * flow + 0.5 * kick);
+      hands.advance(dt * (flow + kick * 6));
     });
+    g.userData.chime = function () {
+      kick = 1;
+      AUDIO.grandChime();
+    };
     return g;
   }
 
@@ -262,6 +276,13 @@ var PROPS = (function () {
       stream.visible = flow > 0.05 && f < 1;
       if (f >= 1 && !noFlip && flow > 0.05) flipT = 0;
     });
+    // turning it over by hand — borrowed sand
+    g.userData.flip = function () {
+      if (flipT >= 0) return false;
+      flipT = 0;
+      AUDIO.sandFlip();
+      return true;
+    };
     return g;
   }
 
@@ -303,12 +324,40 @@ var PROPS = (function () {
     var minute = flatHand(radius * 0.78, 0.10);
     var hour = flatHand(radius * 0.5, 0.14);
     var timeH = 11 + 57 / 60;
+    var visM = (timeH % 1) * Math.PI * 2;
+    var visH = ((timeH / 12) % 1) * Math.PI * 2;
+    var attract = null, glow = 0;
     function apply() {
-      minute.rotation.z = -(timeH % 1) * Math.PI * 2;
-      hour.rotation.z = -((timeH / 12) % 1) * Math.PI * 2;
+      minute.rotation.z = -visM;
+      hour.rotation.z = -visH;
     }
     apply();
-    reg(function (t, dt, flow) { timeH += dt * flow / 60; apply(); });
+
+    // the compass of now — stand on the dial and it points at you,
+    // because for these three minutes, you ARE the present
+    var rimGlowMat = rim.material = new THREE.MeshPhongMaterial({
+      map: TX.tex(T.gold, 1, 1), shininess: 90, specular: 0xffe0a0, emissive: 0x1a1000
+    });
+    reg(function (t, dt, flow) {
+      timeH += dt * flow / 60;
+      if (attract !== null) {
+        visM = lerpAngle(visM, attract, dt * 3.2);
+        visH = lerpAngle(visH, attract, dt * 1.8);
+        glow = Math.min(1, glow + dt * 2);
+      } else {
+        visM = lerpAngle(visM, (timeH % 1) * Math.PI * 2, dt * 2.2);
+        visH = lerpAngle(visH, ((timeH / 12) % 1) * Math.PI * 2, dt * 2.2);
+        glow = Math.max(0, glow - dt * 1.2);
+      }
+      var e = 0.1 + glow * (0.45 + Math.sin(t * 4) * 0.12);
+      rimGlowMat.emissive.setRGB(e, e * 0.65, e * 0.12);
+      apply();
+    });
+    g.userData.setAttract = function (visTarget) {
+      if (visTarget !== null && attract === null) AUDIO.dialHum();
+      attract = visTarget;
+    };
+    g.userData.radius = radius;
     return g;
   }
 
@@ -369,8 +418,41 @@ var PROPS = (function () {
     }
     g.add(head);
 
+    // a warmth that only wakes for visitors
+    var flare = new THREE.PointLight(0xffd9a0, 0, 12);
+    flare.position.copy(head.position);
+    g.add(flare);
+
+    // the sun turns to watch whoever walks its court — slowly, the way
+    // statues move when you aren't quite looking
+    var watch = 0;
     reg(function (t, dt, flow) {
-      head.rotation.y = Math.sin(t * 0.15) * 0.22 * flow; // the sun slowly regards the plaza
+      var idle = Math.sin(t * 0.15) * 0.22 * flow;
+      if (window.PLAYER && !PLAYER.dead) {
+        var p = PLAYER.pos();
+        var wp = new THREE.Vector3();
+        g.getWorldPosition(wp);
+        var dx = p.x - wp.x, dz = p.z - wp.z;
+        var d = Math.sqrt(dx * dx + dz * dz);
+        if (d < 16) {
+          watch = Math.min(1, watch + dt * 0.5);
+          var want = Math.atan2(dx, dz) - g.rotation.y;
+          while (want > Math.PI) want -= Math.PI * 2;
+          while (want < -Math.PI) want += Math.PI * 2;
+          want = Math.max(-1.1, Math.min(1.1, want));
+          head.rotation.y = lerpAngle(head.rotation.y, want, dt * 0.7);
+          // rays breathe warmer the closer you stand
+          var near = Math.max(0, 1 - d / 7);
+          flare.intensity += ((near * 1.6) - flare.intensity) * Math.min(1, dt * 2);
+          head.scale.setScalar(1 + near * 0.04 * Math.sin(t * 2.2));
+        } else {
+          watch = Math.max(0, watch - dt * 0.3);
+          flare.intensity *= Math.max(0, 1 - dt * 2);
+          head.rotation.y = lerpAngle(head.rotation.y, idle, dt * (1 - watch) * 0.8);
+        }
+      } else {
+        head.rotation.y = lerpAngle(head.rotation.y, idle, dt * 0.8);
+      }
     });
     return g;
   }
@@ -424,9 +506,27 @@ var PROPS = (function () {
     hub.position.z = 0.16; head.add(hub);
     g.add(head);
 
+    // the rune clock measures whoever comes close — its hands race,
+    // taking a reading of you, then settle back into their strange idle
     var rates = [0.31, -0.073, 0.013];
+    var frenzy = 0, tickAcc = 0;
     reg(function (t, dt, flow) {
-      for (var i = 0; i < 3; i++) hands[i].rotation.z -= rates[i] * dt * flow;
+      var target = 0;
+      if (window.PLAYER && !PLAYER.dead) {
+        var p = PLAYER.pos();
+        var wp = new THREE.Vector3();
+        g.getWorldPosition(wp);
+        var dx = p.x - wp.x, dz = p.z - wp.z;
+        if (dx * dx + dz * dz < 36) target = 1;
+      }
+      frenzy += (target - frenzy) * Math.min(1, dt * 1.5);
+      var mult = 1 + frenzy * 9;
+      for (var i = 0; i < 3; i++) hands[i].rotation.z -= rates[i] * dt * (flow + 0.06) * mult;
+      head.rotation.z = -0.16 + Math.sin(t * 17) * 0.012 * frenzy;
+      if (frenzy > 0.4) {
+        tickAcc += dt * frenzy;
+        if (tickAcc > 0.21) { tickAcc = 0; AUDIO.menuHover(); }
+      }
     });
     return g;
   }

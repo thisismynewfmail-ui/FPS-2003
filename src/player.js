@@ -201,6 +201,16 @@ var PLAYER = (function () {
     HUD.setHealth(hp);
   }
 
+  function refillTempus(amt) {
+    tempus = Math.min(100, tempus + amt);
+  }
+
+  // restoring from a host savegame
+  function applySave(s) {
+    if (typeof s.hp === 'number') { hp = Math.max(1, Math.min(maxHp, s.hp)); HUD.setHealth(hp); }
+    if (typeof s.tempus === 'number') tempus = Math.max(0, Math.min(100, s.tempus));
+  }
+
   // ---------------------------------------------------------------
   // per-frame
   // ---------------------------------------------------------------
@@ -317,7 +327,7 @@ var PLAYER = (function () {
 
   return {
     init: init, update: update, reset: reset, teleport: teleport,
-    damage: damage, heal: heal,
+    damage: damage, heal: heal, refillTempus: refillTempus, applySave: applySave,
     pos: function () { return feet; },
     setEnabled: function (on) { enabled = on; mouseDown = false; rmbDown = false; },
     setYaw: function (v) { yaw = v; },

@@ -16,6 +16,7 @@ var WORLD = (function () {
   var spaceGroup, terraceGroup, P;   // P = current build parent
   var platforms = [], ramps = [], colliders = [];
   var keys = [], sands = [], gates = [];
+  var propRefs = {};             // named interactive props for main.js
   var portal = null, portalPos = new THREE.Vector3();
   var stars, spaceSkyMesh, venusDome;
   var lights = {};
@@ -177,11 +178,13 @@ var WORLD = (function () {
     gc.position.set(-6, 0, -8); gc.rotation.y = 0.5;
     gc.scale.setScalar(1.35);
     P.add(gc); coll(-6, -8, 1.3);
+    propRefs.clock = gc;
 
     // the great hourglass on its overlook
     var hg = PROPS.hourglassProp(2.4);
     hg.position.set(-63, 0, 0);
     P.add(hg); coll(-63, 0, 1.8);
+    propRefs.hourglass = hg;
     // small shrine arches around it
     var ha = PROPS.arch(7, 6.4, M.pinkMarble);
     ha.position.set(-63, 0, -3.4); P.add(ha);
@@ -192,6 +195,7 @@ var WORLD = (function () {
     var fd = PROPS.floorDial(4.2);
     fd.position.set(8, 0, 7);
     P.add(fd);
+    propRefs.dial = fd;
 
     // Key of the Present — beside the grandfather clock
     addKey('present', -10, 0, -14);
@@ -490,6 +494,7 @@ var WORLD = (function () {
 
   function setZone(zone) {
     currentZone = zone;
+    AUDIO.setZoneMusic(zone);
     var space = zone !== 'terrace';
     spaceGroup.visible = space;
     terraceGroup.visible = !space;
@@ -571,14 +576,19 @@ var WORLD = (function () {
     return timeFlow;
   }
 
+  function setTimeFlow(v) {
+    timeFlow = Math.max(0, Math.min(1, v));
+  }
+
   return {
     build: build, update: update, setZone: setZone, zoneAt: zoneAt,
     groundHeight: groundHeight, collide: collide,
-    addTimeFlow: addTimeFlow,
+    addTimeFlow: addTimeFlow, setTimeFlow: setTimeFlow,
     get timeFlow() { return timeFlow; },
     get portal() { return portal; },
     get portalPos() { return portalPos; },
     get zone() { return currentZone; },
+    get props() { return propRefs; },
     ZONES: ZONES
   };
 })();

@@ -14,13 +14,21 @@ clock in the world stopped at three minutes to midnight.
 
 ## Playing
 
-Open `index.html` in any modern browser (no build step, no network needed),
-or serve the folder:
+The best way — host it on your LAN (port 6969) with save support:
 
 ```
-python3 -m http.server 8000
-# → http://localhost:8000
+./tempus.run
+# local : http://localhost:6969
+# LAN   : http://<your-ip>:6969   ← share this
 ```
+
+The host chronicles everything into `./saves/`: the world state
+(`savegame.json`, giving you a CONTINUE option in the main menu), every
+conversation with Minuette (`chatlog.jsonl`), and her long-term memories
+(`memories.json`). Only the Python 3 standard library is required.
+
+Or just open `index.html` in any modern browser (no build step, no
+network needed) — everything works except host-side saving.
 
 | Input | Action |
 | --- | --- |
@@ -28,11 +36,13 @@ python3 -m http.server 8000
 | **Mouse** | aim |
 | **LMB** | fire the PEARL |
 | **RMB (hold)** | TEMPUS SHIFT — spend the hourglass to slow time |
+| **E** | talk to Minuette / wind the clock / turn the hourglass |
 | **R** | reload |
 | **Space** | jump |
 | **Shift** | sprint |
 | **M** | toggle sound |
-| **Esc** | pause |
+| **Esc** | pause (settings live here) |
+| **` / ~** | developer console (toggle custodian spawning, grant keys, save) |
 
 ## The corridors
 
@@ -60,6 +70,60 @@ Collect the three winding keys (each one restarts more of the world's
 clockwork — pendulums swing, sand falls, hands sweep, the stars resume their
 wheel), then climb the stair to the waiting Earth.
 
+The timepieces themselves are alive: the floor dial swings its hands to
+point at whoever stands upon it (for these three minutes, you *are* the
+present); the grandfather clock can be wound (E) to lend you its minutes
+(full tempus); the great hourglass can be turned by hand (E) for borrowed
+sand (vitality); the sun pillar slowly turns its stone face to watch you;
+and the rune clock's hands race when you come close, taking your measure.
+
+## Minuette — the Last Minute
+
+When time froze at 11:57, three unspent minutes were left standing.
+Minuette is the youngest, and the only one still awake — a porcelain
+clockwork spirit with copper hair, a dress hemmed with the pattern of the
+days, a stopped pocket-watch pendant, and a halo of hours. She waits by
+the floor dial. Walk up and press **E**:
+
+- **TALK WITH HER** — free chat, answered by a local LLM (see below), with
+  Event[0]-style grounding: every reply carries a live world-state block
+  (where she is, your vitality, keys recovered, recent happenings, the real
+  outside date and time) plus her **date-stamped long-term memories**,
+  which she distills herself from your conversations and which persist in
+  localStorage and on the LAN host.
+- **FOLLOW ME / WAIT HERE** — she glides behind you through the corridors
+  (and folds through the space between seconds if you gate away without her).
+- She waves, blinks, watches you, and offers idle and contextual chatter
+  (speech-bubbled, in Animal-Crossing-style animalese with its own volume
+  slider). She speaks strictly in character.
+
+### Her voice — local LLM setup
+
+PAUSE (Esc) → **SETTINGS**: point the game at any OpenAI-compatible
+endpoint (LM Studio, etc. — enable CORS on the server):
+
+- endpoint (default `http://10.0.0.136:5000/v1`), API key, model
+  (auto-listed by TEST API)
+- template mode: **chat** (`/chat/completions`; the server renders the
+  model's own Jinja chat template — for Qwen models that *is* the Qwen
+  template) or **chatml** (`/completions` with the Qwen ChatML template
+  rendered client-side, stopping on `<|im_end|>`)
+- full sampling: temperature, top_p, top_k, min_p, repeat_penalty,
+  presence/frequency penalties, max_tokens
+- memory recall (how many date-stamped memories she's given per reply),
+  FORGET MEMORIES, TEST API / TEST CHAT / APPLY & SAVE, volume sliders
+  (master / music / her voice)
+
+Without a reachable endpoint she still talks — a smaller, canned version
+of herself — and every system degrades gracefully.
+
+## Realms & music
+
+Each realm has its own synthesized arrangement that crossfades as you
+travel: the Plaza's warm nostalgic pad, the Court's darker drone with
+distant celestial bells, and the Terrace's brighter major-seventh daylight
+with a soft arpeggio. The tick-tock only exists while time flows.
+
 ## Tech
 
 - Single-page Three.js (r128, vendored in `lib/`) with **zero binary
@@ -76,15 +140,21 @@ wheel), then climb the stair to the waiting Earth.
   enemies, platform physics with walkable rects and ramp stairs.
 
 ```
-index.html          shell + HUD/menu DOM
-css/style.css       2003 amber HUD, CRT overlays, menus
+index.html          shell + HUD/menu/NPC/settings/dev-console DOM
+css/style.css       2003 amber HUD, CRT overlays, menus, Minuette's rose UI
 lib/three.min.js    Three.js r128 (vendored)
 src/textures.js     procedural texture factory
-src/audio.js        WebAudio synth (music + SFX)
+src/audio.js        WebAudio synth (per-realm music, animalese, SFX)
 src/props.js        clocks, hourglass, dial, statues, gazebo, CRT, palms, keys
 src/world.js        zone assembly, skies, platforms, lights, timeFlow
 src/enemies.js      the Custodians: spawning, orbs, shatter debris
+src/npc.js          Minuette: procedural model, behaviors, portrait
+src/dialogue.js     her mind: LLM client, memories, chatter, dialogue UI
+src/settings.js     endpoint/sampling/volume settings (persisted)
 src/player.js       pointer-lock controller, PEARL viewmodel, tempus shift
 src/hud.js          HUD readouts and messages
-src/main.js         boot, renderer, game states, pickups, win/death
+src/main.js         boot, renderer, game states, interactions, saves, dev console
+tempus.run          executable LAN host (port 6969), python3 stdlib only
+server/app.py       static hosting + /api/save /api/load /api/chatlog /api/memories
+server/storage.py   saves/savegame.json, chatlog.jsonl, memories.json
 ```

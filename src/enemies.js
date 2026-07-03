@@ -13,6 +13,7 @@ var ENEMIES = (function () {
   var maskMat, orbMat, orbGlowTex;
   var spawnTimer = 3, graceTimer = 14;
   var killCount = 0;
+  var spawningEnabled = true;    // dev console can silence the sky
 
   function init(sceneRef, textures) {
     scene = sceneRef; T = textures;
@@ -105,7 +106,7 @@ var ENEMIES = (function () {
   function update(dt, t, playerPos, keysGot, playerAlive) {
     // spawn director
     if (graceTimer > 0) { graceTimer -= dt; }
-    else if (playerAlive) {
+    else if (playerAlive && spawningEnabled) {
       spawnTimer -= dt;
       var budget = 2 + keysGot * 2;
       if (spawnTimer <= 0 && list.length < budget) {
@@ -285,6 +286,14 @@ var ENEMIES = (function () {
   return {
     init: init, update: update, hitTest: hitTest, damage: damage,
     burst: burst, clearAll: clearAll, spawn: spawn,
+    setSpawning: function (on) {
+      spawningEnabled = !!on;
+      if (!spawningEnabled) {
+        list.slice().forEach(function (e) { scene.remove(e.obj); });
+        list.length = 0;
+      }
+    },
+    get spawning() { return spawningEnabled; },
     get count() { return list.length; },
     get kills() { return killCount; }
   };
