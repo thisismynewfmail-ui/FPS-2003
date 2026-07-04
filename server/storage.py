@@ -67,6 +67,24 @@ def recent_chats(root, limit=50):
     return out
 
 
+def save_settings(root, settings):
+    path = os.path.join(_saves_dir(root), "settings.json")
+    with _LOCK:
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(settings, f, indent=2, ensure_ascii=False)
+        os.replace(tmp, path)
+
+
+def load_settings(root):
+    path = os.path.join(_saves_dir(root), "settings.json")
+    if not os.path.exists(path):
+        return None
+    with _LOCK:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+
 def save_memories(root, memories):
     path = os.path.join(_saves_dir(root), "memories.json")
     with _LOCK:

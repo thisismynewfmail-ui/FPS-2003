@@ -236,8 +236,31 @@ var DIALOGUE = (function () {
     messages.forEach(function (m) {
       s += '<|im_start|>' + m.role + '\n' + m.content + '<|im_end|>\n';
     });
-    s += '<|im_start|>assistant\n';
+    // Qwen3 emits <think>...</think> before its answer; opening the assistant
+    // turn with an empty, already-closed think block tells it to skip aloud
+    // reasoning entirely.
+    s += '<|im_start|>assistant\n<think>\n\n</think>\n\n';
     return s;
+  }
+
+  // strip chain-of-thought so only Minuette's spoken words remain.
+  // handles <think>…</think> (Qwen3), <thinking>…</thinking>, unclosed think
+  // blocks from truncated reasoning, and ChatML control leftovers.
+  function stripThink(text) {
+    if (!text) return '';
+    // paired reasoning blocks, any tag flavor, across newlines
+    text = text.replace(/<\s*(think|thinking|reason|reasoning|analysis)\s*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '');
+    // a lone closing tag: keep only what follows it (the actual answer)
+    var closeIdx = text.search(/<\s*\/\s*(think|thinking|reason|reasoning|analysis)\s*>/i);
+    if (closeIdx !== -1) {
+      text = text.slice(closeIdx).replace(/^<\s*\/\s*\w+\s*>/i, '');
+    }
+    // a lone opening tag with no close = truncated reasoning, no answer given
+    var openIdx = text.search(/<\s*(think|thinking|reason|reasoning|analysis)\s*>/i);
+    if (openIdx !== -1) text = text.slice(0, openIdx);
+    // ChatML / template control tokens that sometimes leak through
+    text = text.replace(/<\|[^|]*\|>/g, '');
+    return text.replace(/^["'\s]+|["'\s]+$/g, '').trim();
   }
 
   function llmRequest(messages, overrides) {
@@ -281,8 +304,13 @@ var DIALOGUE = (function () {
       return r.json();
     }).then(function (j) {
       var ch = j.choices && j.choices[0];
-      var text = ch ? (ch.message ? ch.message.content : ch.text) : '';
-      return (text || '').replace(/<\|im_end\|>[\s\S]*/, '').replace(/^["'\s]+|["'\s]+$/g, '').trim();
+      var text = '';
+      if (ch) {
+        // some OpenAI-compatible servers split reasoning into its own field
+        // (message.reasoning_content); we only ever want the spoken content
+        text = ch.message ? ch.message.content : ch.text;
+      }
+      return stripThink((text || '').replace(/<\|im_end\|>[\s\S]*/, ''));
     });
   }
 
@@ -382,6 +410,12 @@ var DIALOGUE = (function () {
       if (e.key === 'Escape') close();
     });
     $('npc-back').addEventListener('click', function () { AUDIO.uiClose(); showOpts(); });
+
+    // clicking the dim area outside her card closes the panel and drops
+    // straight back into the world (never into the pause menu)
+    $('npc-panel').addEventListener('mousedown', function (e) {
+      if (e.target === $('npc-panel')) close();
+    });
   }
 
   function refreshOpts() {

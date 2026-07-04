@@ -17,7 +17,8 @@ clock in the world stopped at three minutes to midnight.
 The best way — host it on your LAN (port 6969) with save support:
 
 ```
-./tempus.run
+python3 run.py
+# or ./run.py  ·  or ./tempus.py  ·  add --port 7000 to change the port
 # local : http://localhost:6969
 # LAN   : http://<your-ip>:6969   ← share this
 ```
@@ -154,7 +155,8 @@ src/settings.js     endpoint/sampling/volume settings (persisted)
 src/player.js       pointer-lock controller, PEARL viewmodel, tempus shift
 src/hud.js          HUD readouts and messages
 src/main.js         boot, renderer, game states, interactions, saves, dev console
-tempus.run          executable LAN host (port 6969), python3 stdlib only
-server/app.py       static hosting + /api/save /api/load /api/chatlog /api/memories
-server/storage.py   saves/savegame.json, chatlog.jsonl, memories.json
+run.py              main LAN host (port 6969, --host/--port), python3 stdlib only
+tempus.py           thin launcher that calls run.py
+server/app.py       static hosting + /api save/load/chatlog/memories/settings
+server/storage.py   saves/savegame.json, chatlog.jsonl, memories.json, settings.json
 ```

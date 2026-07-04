@@ -36,10 +36,25 @@ var SETTINGS = (function () {
       for (var k in DEFAULTS) if (s[k] !== undefined) cur[k] = s[k];
     } catch (e) {}
     applyVolumes();
+    // if a LAN host is serving us, its shared settings win (so every
+    // machine on the network shares one endpoint/sampling config)
+    fetch('/api/settings').then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.exists && j.settings) {
+        for (var k in DEFAULTS) if (j.settings[k] !== undefined) cur[k] = j.settings[k];
+        applyVolumes();
+        try { localStorage.setItem(LS, JSON.stringify(cur)); } catch (e) {}
+        if (typeof toUI === 'function') toUI();
+      }
+    }).catch(function () {});
   }
 
   function save() {
     try { localStorage.setItem(LS, JSON.stringify(cur)); } catch (e) {}
+    // mirror to the LAN host so saved settings persist across browsers
+    fetch('/api/settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: cur })
+    }).catch(function () {});
   }
 
   function applyVolumes() {

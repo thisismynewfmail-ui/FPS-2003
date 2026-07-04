@@ -9,6 +9,8 @@ Serves the game to the whole LAN on port 6969 and persists saves:
   GET  /api/chats       → recent chat exchanges
   GET  /api/memories    → server copy of her long-term memories
   POST /api/memories    → store her long-term memories
+  GET  /api/settings    → shared settings (endpoint/sampling/volumes)
+  POST /api/settings    → store shared settings
   GET  /api/ping        → {"ok": true} (client uses this to detect the host)
 """
 
@@ -76,6 +78,9 @@ class Handler(SimpleHTTPRequestHandler):
             if self.path == "/api/memories":
                 mem = storage.load_memories(ROOT)
                 return self._json(200, {"exists": mem is not None, "memories": mem or []})
+            if self.path == "/api/settings":
+                st = storage.load_settings(ROOT)
+                return self._json(200, {"exists": st is not None, "settings": st or {}})
             return self._json(404, {"error": "unknown api"})
         # never serve the saves directory raw
         if self.path.startswith("/saves"):
@@ -102,6 +107,12 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(400, {"error": "bad json"})
             storage.save_memories(ROOT, data["memories"])
             return self._json(200, {"ok": True})
+        if self.path == "/api/settings":
+            data = self._read_json()
+            if data is None or not isinstance(data.get("settings"), dict):
+                return self._json(400, {"error": "bad json"})
+            storage.save_settings(ROOT, data["settings"])
+            return self._json(200, {"ok": True})
         return self._json(404, {"error": "unknown api"})
 
     def do_OPTIONS(self):
@@ -112,14 +123,14 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
 
-def main():
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+def serve(host="0.0.0.0", port=PORT):
+    server = ThreadingHTTPServer((host, port), Handler)
     ip = lan_ip()
     print()
     print("  TEMPUS — Corridors of Eternity :: LAN host")
     print("  ==========================================")
-    print("  local   : http://localhost:%d" % PORT)
-    print("  LAN     : http://%s:%d   <- share this" % (ip, PORT))
+    print("  local   : http://localhost:%d" % port)
+    print("  LAN     : http://%s:%d   <- share this" % (ip, port))
     print("  saves   : %s" % os.path.join(ROOT, "saves"))
     print("  stop    : Ctrl+C")
     print()
@@ -127,6 +138,10 @@ def main():
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n  the corridors close. goodnight.")
+
+
+def main():
+    serve()
 
 
 if __name__ == "__main__":

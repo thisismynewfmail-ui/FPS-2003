@@ -23,6 +23,7 @@ var GAME = (function () {
   var npcBubbleEl, interactEl;
   var projV = new THREE.Vector3();
   var hostOk = false, pendingSave = null, autosaveT = 45;
+  var wasLocked = false, enteredPlayAt = 0;
 
   var KEY_LINES = {
     present: ['KEY OF THE PRESENT', 'the pendulum remembers how to swing'],
@@ -196,27 +197,51 @@ var GAME = (function () {
     });
     HUD.show(true);
     PLAYER.setEnabled(true);
+    enteredPlayAt = performance.now();
+    requestLock();
+  }
+
+  // request pointer lock defensively: swallow the promise rejection the
+  // browser throws when we ask again during its post-Esc security cooldown,
+  // so it never bubbles up as an error or bounces us back into pause.
+  function requestLock() {
     document.body.requestPointerLock =
       document.body.requestPointerLock || document.body.mozRequestPointerLock;
-    document.body.requestPointerLock();
+    try {
+      var p = document.body.requestPointerLock();
+      if (p && typeof p.catch === 'function') p.catch(function () {});
+    } catch (e) { /* ignore */ }
   }
 
   function wireLock() {
     document.addEventListener('pointerlockchange', function () {
-      if (document.pointerLockElement === null && state === 'play') {
-        state = 'pause';
-        PLAYER.setEnabled(false);
-        SETTINGS.hide();
-        document.getElementById('pause').classList.remove('hidden');
-        document.getElementById('mi-resume').style.display = 'block';
+      var locked = document.pointerLockElement !== null;
+      if (locked) { wasLocked = true; return; }
+      // lock was lost. Only fall to pause if we had *actually* been locked
+      // and we're past the entry grace window — this defeats the acquire/
+      // release bounce that made the pause menu reopen repeatedly.
+      if (state === 'play' && wasLocked &&
+          performance.now() - enteredPlayAt > 500) {
+        wasLocked = false;
+        openPause();
       }
+      wasLocked = false;
     });
-    // if a re-lock was refused by the browser, a click brings it back
+    document.addEventListener('pointerlockerror', function () { /* cooldown; ignore */ });
+
+    // clicking the world re-acquires the lock when we're playing unlocked
+    // (e.g. the browser refused an automatic re-lock)
     document.getElementById('viewport').addEventListener('click', function () {
-      if (state === 'play' && !document.pointerLockElement) {
-        document.body.requestPointerLock();
-      }
+      if (state === 'play' && !document.pointerLockElement) requestLock();
     });
+  }
+
+  function openPause() {
+    state = 'pause';
+    PLAYER.setEnabled(false);
+    SETTINGS.hide();
+    document.getElementById('pause').classList.remove('hidden');
+    document.getElementById('mi-resume').style.display = 'block';
   }
 
   // ---------------------------------------------------------------
